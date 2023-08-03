@@ -2,12 +2,11 @@
 layout: default
 ---
 
-Text can be **bold**, _italic_, or ~~strikethrough~~.
 
 
 
 # Project Description
-A Mixed Reality "Playground" space to visualize and control the iRobot Create3. In this playground you can play notes from the Create3, drive it back and forth, visualize SLAM, visualize an rplidar laser scan, visualize a PMD time of flight camera pointcloud, and see the Create3 move in real time all while seeing the real world anchroed through the mixed reality passthrough features of the Quest 2
+A Mixed Reality "playground" space to visualize and control the iRobot Create3. In this project you can play notes from the Create3, drive it back and forth, visualize SLAM, visualize an RPLIDAR laser scan, visualize a PMD time of flight camera pointcloud, and see the Create3 move in real time all while seeing the real world anchored through the mixed reality passthrough features of the Quest 2
 # Materials used
 *   [iRobot Create3](https://edu.irobot.com/what-we-offer/create3)
 *   [NXP 8M Plus NavQ+](https://emcraft.com/products/1222)
@@ -29,20 +28,118 @@ My first step was to connnect the NavQ+ and the Create3 together, I used this [s
 | Reliable           | Best effort      | Yes   |
 | Reliable           | Reliable | Yes  |
 
-```js
-// Javascript code with syntax highlighting.
-var fun = function lang(l) {
-  dateformat.i18n = require('./lang/' + l)
-  return true;
-}
+The TCP Connector package uses reliable with no way to change it, and most of the topics from the Create3 are best effort with no way to change them as they are locked off. So in order to get around this, I wrote a Ros2 node that subscribes to a topic and republishes it with a new QOS:
+
+```py
+import rclpy
+from rclpy.node import Node
+from sensor_msgs.msg import PointCloud2
+from nav_msgs.msg import Odometry
+from rclpy.qos import QoSProfile, QoSReliabilityPolicy
+
+class RepeaterNode(Node):
+  def __init__(self):
+    super().__init__('repeater_node')
+
+    # Configure QoS profiles for the subscriptions and publishers
+    qos_profile1 = QoSProfile(
+      reliability=QoSReliabilityPolicy.BEST_EFFORT,
+      depth=10
+    )
+    qos_profile2 = QoSProfile(
+      reliability=QoSReliabilityPolicy.RELIABLE,
+      depth=10
+    )
+
+    # Subscription to receive PointCloud2 messages on the cloud topic
+    # When a message is received, it will trigger the input_callback method
+    self.subscription = self.create_subscription(
+      PointCloud2,
+      'cloud',
+      self.input_callback,
+      qos_profile=qos_profile1
+    )
+    self.subscription1 = self.create_subscription(
+      Odometry,
+      'odom',
+      self.input_callback1,
+      qos_profile=qos_profile1
+    )
+    # Publisher to send PointCloud2 messages to unity_cloud topic
+    self.publisher = self.create_publisher(
+      PointCloud2,
+      'unity_cloud',
+      qos_profile=qos_profile2
+    )
+    self.publisher1 = self.create_publisher(
+      Odometry,
+      'unity_odom',
+      qos_profile=qos_profile2
+    )
+
+  # Callback function for the PointCloud2 subscription
+  def input_callback(self, msg):
+    modified_msg = msg
+    self.publisher.publish(modified_msg)
+  def input_callback1(self, msg):
+    modified_msg = msg
+    self.publisher1.publish(modified_msg)
+
+# Initalize ROS 2 node, create the RepeaterNode and spin the node
+def main(args=None):
+  rclpy.init(args=args)
+  repeater_node = RepeaterNode()
+  rclpy.spin(repeater_node)                                                                                             
+  repeater_node.destroy_node()                                                                                          
+  rclpy.shutdown()
+                                                                                                                        
+if __name__ == '__main__':
+  main()
 ```
 
-```ruby
-# Ruby code with syntax highlighting
-GitHubPages::Dependencies.gems.each do |gem, version|
-  s.add_dependency(gem, "= #{version}")
-end
+You also need to  convert all of the create3 messages into C# usable messages, the package is actually able to do this for you. I found the msg folder for the create3 messages in the NavQ+ and then SCPed it over to my host machine and dragged it in my unity project where it converted all the messages into C# message classes for me.  
+# Creation of the first publisher
+I decided to test out publishing by creating a digital piano that publishes to the cmd_audio topic. I looked at the example publisher script from the package to learn how to publish messages, and then created my own script to publish a note to cmd_audio. Next I created a gui of white buttons and black buttons for the sharp keys, and modified the script to send all the notes. Theres a total of 17 notes, heres what the code looks like modified for only 1:
+
+```c#
+using UnityEngine;
+using Unity.Robotics.ROSTCPConnector;
+using RosMessageTypes.IrobotCreate;
+
+public class MusicPublisher : MonoBehaviour
+{
+    ROSConnection ros;
+    public string topicName = "/cmd_audio";
+
+    private AudioNoteMsg[] keyC;
+
+    void Start()
+    {
+        ros = ROSConnection.GetOrCreateInstance();
+        ros.RegisterPublisher<AudioNoteVectorMsg>(topicName);
+        // Creates a new audio note message with the frequency of 262hz and the duration of 1 second
+        keyC = new AudioNoteMsg[] { new AudioNoteMsg(262, new RosMessageTypes.BuiltinInterfaces.DurationMsg(1, 0)) };
+    }
+
+    // Each individual note has one of these functions
+    public void CNote()
+    {
+        AudioNoteVectorMsg noteC = new AudioNoteVectorMsg(
+            // The header is left blank
+            new RosMessageTypes.Std.HeaderMsg(),
+            keyC,
+            // If this was true, the notes would play over eachother
+            false
+        );
+
+        ros.Publish(topicName, noteC);
+    }
+}
 ```
+Finally I mapped each of the keys to the functions on the script.
+
+![Unity Piano Publisher](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExZjJvYTl5a2w4ZHI1NGJ6bDNybnJoMXp6MHdxbjFmZTdtZGtyNnJ2NiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/nbHOK2ZSl82WSXZntX/giphy.gif)
+
 
 #### Header 4
 
@@ -128,3 +225,4 @@ Long, single-line code blocks should not wrap. They should horizontally scroll i
 ```
 The final element.
 ```
+Text can be **bold**, _italic_, or ~~strikethrough~~.
