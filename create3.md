@@ -34,7 +34,7 @@ The TCP Connector package uses reliable with no way to change it, and most of th
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import PointCloud2
-from nav_msgs.msg import Odometry
+from sensor_msgs.msg import Imu
 from rclpy.qos import QoSProfile, QoSReliabilityPolicy
 
 class RepeaterNode(Node):
@@ -60,8 +60,8 @@ class RepeaterNode(Node):
       qos_profile=qos_profile1
     )
     self.subscription1 = self.create_subscription(
-      Odometry,
-      'odom',
+      Imu,
+      'imu',
       self.input_callback1,
       qos_profile=qos_profile1
     )
@@ -72,8 +72,8 @@ class RepeaterNode(Node):
       qos_profile=qos_profile2
     )
     self.publisher1 = self.create_publisher(
-      Odometry,
-      'unity_odom',
+      Imu,
+      'unity_imu',
       qos_profile=qos_profile2
     )
 
@@ -109,7 +109,8 @@ using RosMessageTypes.IrobotCreate;
 public class MusicPublisher : MonoBehaviour
 {
     ROSConnection ros;
-    public string topicName = "/cmd_audio";
+    public string topicName = "/cmd_audio";r
+
 
     private AudioNoteMsg[] keyC;
 
@@ -140,14 +141,22 @@ Finally I mapped each of the keys to the functions on the script.
 
 ![Unity Piano Publisher](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExZjJvYTl5a2w4ZHI1NGJ6bDNybnJoMXp6MHdxbjFmZTdtZGtyNnJ2NiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/nbHOK2ZSl82WSXZntX/giphy.gif)
 
+# Putting the Create3 in Unity
+In order to show the robot in Unity I had to retrieve the URDF file and import it into Unity using the URDF importer package. Once it was in, I used the built in tf attachment script and attached it to the robot, enabling it to move/rotate as the robot does in real life.
+![Robot Moving](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNjBhN2Y1M3ZkaXBxNjRsenN0aXRvcnRiaTBiZnN0d2x0NXZtMmZ4ciZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/udAgrK1JhebYCqFvVW/giphy.gif)
+# Running SLAM
+First I attached the RPLIDAR by screwing it in to the top plate and the Pmd Flexx2 by using a 3d printed mount to hold it: 
 
-#### Header 4
+Then I followed the steps on the [Voxelbotics documentation website](https://voxelbotics.atlassian.net/wiki/spaces/DOC/pages/43188225/iRobot+Create3+SLAM+Setup) in order to configure the Create3 application. On another liux machine I installed and launched rviz and succesfully ran SLAM with the map, pointcloud, and the laser scan on the NAVQ+:
 
-*   This is an unordered list following a header.
-*   This is an unordered list following a header.
-*   This is an unordered list following a header.
+![SLAM](assets/img/SLAM.png)
 
-##### Header 5
+Next I ran the TCP package and in combination with the repeater node I wrote, I was able to visualize the topics:
+
+![Unity SLAM](https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNjVrcWZ1eGIxY2F4YTI2YXN6a2Rvc3U1OHQ0OGtneDd0bGRudHd3OCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/qd7aizl5xbfrxHaJrA/giphy.gif)
+
+# Headset MR Setup
+I used the [Meta Quest2 documentation website](https://developer.oculus.com/documentation/unity/unity-env-device-setup/) in order to setup the headset with Unity. Next I setup passthrough using their [tutorial](https://developer.oculus.com/documentation/unity/unity-passthrough-gs/)
 
 1.  This is an ordered list following a header.
 2.  This is an ordered list following a header.
