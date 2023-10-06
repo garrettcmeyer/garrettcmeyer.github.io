@@ -159,6 +159,7 @@ Next I ran the TCP package and in combination with the repeater node I wrote, I 
 I used the [Meta Quest2 documentation website](https://developer.oculus.com/documentation/unity/unity-env-device-setup/) in order to setup the headset with Unity. Next I setup passthrough using their [tutorial](https://developer.oculus.com/documentation/unity/unity-passthrough-gs/)
 
 1.  This is an ordered list following a header.
+1.  This is an ordered list following a header.
 2.  This is an ordered list following a header.
 3.  This is an ordered list following a header.
 
